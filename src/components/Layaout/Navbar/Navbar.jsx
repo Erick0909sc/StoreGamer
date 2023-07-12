@@ -1,28 +1,80 @@
-import React, { useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import log from "@/assets/consola.png";
 import Image from "next/image";
-import { FaStar } from "react-icons/fa";
+import { FaSearch, FaStar } from "react-icons/fa";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { getAllProducts } from "@/redux/products/productsSlice";
+import { useDispatch, useSelector } from "react-redux";
 
 const Navbar = () => {
+  const dispatch = useDispatch();
+  const products = useSelector((state) => state.products.products);
+  const filteredProducts = useSelector(
+    (state) => state.products.filteredProducts
+  );
+  const statusAllProducts = useSelector(
+    (state) => state.products.statusAllProducts
+  );
+  const [searchTerm, setSearchTerm] = useState("");
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isNavbarMenuOpen, setIsNavbarMenuOpen] = useState(false);
+  const [isHoveredProduct, setIsHoveredProduct] = useState(null);
+  const dropdownRef = useRef(null);
+
+  const handleSearchChange = (event) => {
+    setSearchTerm(event.target.value);
+  };
 
   const toggleUserMenu = () => {
     setIsUserMenuOpen(!isUserMenuOpen);
-    setIsNavbarMenuOpen(false); // Asegurar que el menú de navegación se cierre cuando se abre el menú del usuario
+    setIsNavbarMenuOpen(false);
   };
 
   const toggleNavbarMenu = () => {
     setIsNavbarMenuOpen(!isNavbarMenuOpen);
-    setIsUserMenuOpen(false); // Asegurar que el menú del usuario se cierre cuando se abre el menú de navegación
+    setIsUserMenuOpen(false);
   };
+
   const router = useRouter();
 
   const isActivePage = (path) => {
     return router.pathname === path ? "text-blue-500" : "";
   };
+
+  useEffect(() => {
+    dispatch(getAllProducts());
+  }, [dispatch]);
+
+  const filteredProductsByName = products.filter((product) =>
+    product.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleMouseEnter = (productId) => {
+    setIsHoveredProduct(productId);
+  };
+
+  const handleMouseLeave = () => {
+    setIsHoveredProduct(null);
+  };
+
+  const handleClickOutside = (event) => {
+    if (
+      dropdownRef.current &&
+      !dropdownRef.current.contains(event.target) &&
+      event.target.id !== "search-input"
+    ) {
+      setIsHoveredProduct(null);
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   return (
     <nav className="bg-white border-gray-200 dark:bg-gray-900">
       <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
@@ -33,7 +85,6 @@ const Navbar = () => {
           <span className="self-center text-lg font-semibold whitespace-nowrap dark:text-white">
             Gaming Thrones
           </span>
-          
         </a>
         <div className="flex items-center md:order-2">
           <button
@@ -212,34 +263,86 @@ const Navbar = () => {
               </Link>
             </li>
           </ul>
-          <div class="border-b-blue-600 ml-8 focus-within:border-none focus-within:ring focus-within:ring-offset-2 my-6 flex h-8 items-center justify-start border-b-2 bg-gray-100 leading-4 ring-blue-600 sm:w-80">
-            <input
-              placeholder="Search"
-              value=""
-              class="peer ml-2 flex-grow bg-transparent text-gray-500 outline-none text-sm"
-            />
-            <button
-              type="button"
-              class="peer-focus:mr-2 z-20 cursor-pointer text-blue-600 outline-none duration-150 hover:scale-125"
+          <div className="max-w-screen-xl mx-auto mt-2">
+            <div
+              className="border-b-blue-600 ml-8 focus-within:border-none focus-within:ring focus-within:ring-offset-2 my-6 flex h-8 items-center justify-start border-b-2 bg-gray-100 leading-4 ring-blue-600 sm:w-80"
+              ref={dropdownRef}
             >
-              <svg class="h-4 w-4 stroke-2" viewBox="0 0 32 32" fill="none">
-                <circle
-                  cx="15"
-                  cy="14"
-                  r="8"
-                  stroke="currentColor"
-                  fill="transparent"
-                ></circle>
-                <line
-                  x1="21.1514"
-                  y1="19.7929"
-                  x2="26.707"
-                  y2="25.3484"
-                  stroke="currentColor"
-                  fill="transparent"
-                ></line>
-              </svg>
-            </button>
+              <input
+                id="search-input"
+                placeholder="Buscar producto..."
+                value={searchTerm}
+                onChange={handleSearchChange}
+                className="peer ml-2 flex-grow bg-transparent text-gray-500 outline-none text-sm"
+              />
+              <button
+                type="button"
+                className="peer-focus:mr-2 z-20 cursor-pointer text-blue-600 outline-none duration-150 hover:scale-125"
+              >
+                <svg
+                  className="h-4 w-4 stroke-2"
+                  viewBox="0 0 32 32"
+                  fill="none"
+                >
+                  <circle
+                    cx="15"
+                    cy="14"
+                    r="8"
+                    stroke="currentColor"
+                    fill="transparent"
+                  ></circle>
+                  <line
+                    x1="21.1514"
+                    y1="19.7929"
+                    x2="26.707"
+                    y2="25.3484"
+                    stroke="currentColor"
+                    fill="transparent"
+                  ></line>
+                </svg>
+              </button>
+            </div>
+
+            {searchTerm.length > 0 && (
+              <div className="absolute z-10 mt-2 left-1/2 transform -translate-x-1/2">
+                <div className="bg-white border border-gray-300 rounded-lg shadow-md">
+                  <div className="p-4 space-y-2 max-h-60 overflow-y-auto">
+                    {filteredProductsByName.length > 0 ? (
+                      <div className="p-4 space-y-2">
+                        {filteredProductsByName.map((product) => (
+                          <div
+                            key={product.id}
+                            className={`flex items-center space-x-2 ${
+                              isHoveredProduct === product.id ? "bg-blue-100" : ""
+                            }`}
+                            onMouseEnter={() => handleMouseEnter(product.id)}
+                            onMouseLeave={handleMouseLeave}
+                          >
+                            <img
+                              src={product.image}
+                              alt={product.name}
+                              className="w-16 h-16 rounded"
+                            />
+                            <div className="flex flex-col">
+                              <span className="font-medium">
+                                {product.name}
+                              </span>
+                              <span className="text-sm text-gray-500">
+                                ${product.price}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-4 text-gray-500">
+                        No se encontraron productos.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

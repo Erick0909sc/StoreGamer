@@ -70,7 +70,7 @@ const index = () => {
   return (
     <>
       <Layaout>
-        <div className="flex flex-col md:flex-row justify-start md:justify-center  gap-8 py-8 ">
+        <div className="flex flex-col md:flex-row justify-start md:justify-start  gap-8 py-8 ">
           <div className="relative ">
             <details className="group [&_summary::-webkit-details-marker]:hidden">
               <summary className="flex cursor-pointer items-center gap-2  border-gray-400 pb-0 text-gray-900 transition hover:border-gray-600">
