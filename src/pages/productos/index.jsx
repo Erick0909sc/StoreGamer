@@ -1,66 +1,40 @@
 import Layaout from "@/components/Layaout/Layaout";
-import {
-  filterByCategory,
-  getAllProducts,
-} from "@/redux/products/productsSlice";
+import { getAllProducts } from "@/redux/products/productsSlice";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 const index = () => {
   const dispatch = useDispatch();
-  const allProducts = useSelector((state) => state.products.products);
+  const products = useSelector((state) => state.products.products);
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 10;
-  const [selectedCategories, setSelectedCategories] = useState({
-    todos: true,
-    videojuegos: false,
-    consolas: false,
-    accesorios: false,
-  });
-
-  const handleCategoryChange = (category) => {
-    const updatedCategories = {
-      ...selectedCategories,
-      [category]: !selectedCategories[category],
-    };
-    setSelectedCategories(updatedCategories);
-    setCurrentPage(1); // Actualiza la página actual a la primera cuando se realiza un cambio en las categorías seleccionadas
-  };
+  const [open, setopen] = useState({ category: false, price: false, order: false});
 
   useEffect(() => {
     dispatch(getAllProducts());
   }, [dispatch]);
 
-  const filterProductsByCategory = (products) => {
-    const selected = Object.keys(selectedCategories).filter(
-      (category) => selectedCategories[category]
-    );
-
-    if (selected.includes("todos")) {
-      return products;
-    } else {
-      return products.filter((product) =>
-        selected.includes(product.category.toLowerCase())
-      );
-    }
-  };
-
-  const products = filterProductsByCategory(allProducts);
-
+  // Calcular el índice del último producto en la página actual
   const indexOfLastProduct = currentPage * productsPerPage;
+  // Calcular el índice del primer producto en la página actual
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
+  // Obtener los productos para mostrar en la página actual
   const currentProducts = products.slice(
     indexOfFirstProduct,
     indexOfLastProduct
   );
+
+  // Calcular el total de páginas
   const totalPages = Math.ceil(products.length / productsPerPage);
 
+  // Función para cambiar a la siguiente página
   const nextPage = () => {
     if (currentPage < totalPages) {
       setCurrentPage(currentPage + 1);
     }
   };
 
+  // Función para cambiar a la página anterior
   const prevPage = () => {
     if (currentPage > 1) {
       setCurrentPage(currentPage - 1);
@@ -70,10 +44,16 @@ const index = () => {
   return (
     <>
       <Layaout>
-        <div className="flex flex-col md:flex-row justify-start md:justify-start  gap-8 py-8 ">
-          <div className="relative ">
-            <details className="group [&_summary::-webkit-details-marker]:hidden">
-              <summary className="flex cursor-pointer items-center gap-2  border-gray-400 pb-0 text-gray-900 transition hover:border-gray-600">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-start gap-8 py-8">
+          <div className="relative">
+            <details
+              open={open.category}
+              className="group [&_summary::-webkit-details-marker]:hidden"
+            >
+              <summary
+                onClick={() => setopen({ category: true, price: false })}
+                className="flex cursor-pointer items-center gap-2 border-b border-gray-400 pb-1 text-gray-900 transition hover:border-gray-600"
+              >
                 <span className="text-sm font-medium">Categorias</span>
 
                 <span className="transition group-open:-rotate-180">
@@ -95,21 +75,17 @@ const index = () => {
               </summary>
 
               <div className="z-50 group-open:absolute group-open:start-0 group-open:top-auto group-open:mt-2">
-                <div className="w-80 sm:w-80 rounded border border-gray-200 bg-white">
+                <div className="w-64 rounded border border-gray-200 bg-white">
                   <ul className="space-y-1 border-t border-gray-200 p-4">
                     <li>
                       <label
                         htmlFor="FilterInStock"
-                        className={`inline-flex items-center gap-2 ${
-                          selectedCategories.todos ? "font-bold" : ""
-                        }`}
+                        className="inline-flex items-center gap-2"
                       >
                         <input
                           type="checkbox"
                           id="FilterInStock"
                           className="h-5 w-5 rounded border-gray-300"
-                          checked={selectedCategories.todos}
-                          onChange={() => handleCategoryChange("todos")}
                         />
 
                         <span className="text-sm font-medium text-gray-700">
@@ -121,16 +97,12 @@ const index = () => {
                     <li>
                       <label
                         htmlFor="FilterPreOrder"
-                        className={`inline-flex items-center gap-2 ${
-                          selectedCategories.videojuegos ? "font-bold" : ""
-                        }`}
+                        className="inline-flex items-center gap-2"
                       >
                         <input
                           type="checkbox"
                           id="FilterPreOrder"
                           className="h-5 w-5 rounded border-gray-300"
-                          checked={selectedCategories.videojuegos}
-                          onChange={() => handleCategoryChange("videojuegos")}
                         />
 
                         <span className="text-sm font-medium text-gray-700">
@@ -142,16 +114,12 @@ const index = () => {
                     <li>
                       <label
                         htmlFor="FilterOutOfStock"
-                        className={`inline-flex items-center gap-2 ${
-                          selectedCategories.consolas ? "font-bold" : ""
-                        }`}
+                        className="inline-flex items-center gap-2"
                       >
                         <input
                           type="checkbox"
                           id="FilterOutOfStock"
                           className="h-5 w-5 rounded border-gray-300"
-                          checked={selectedCategories.consolas}
-                          onChange={() => handleCategoryChange("consolas")}
                         />
 
                         <span className="text-sm font-medium text-gray-700">
@@ -162,16 +130,12 @@ const index = () => {
                     <li>
                       <label
                         htmlFor="FilterOutOfStock"
-                        className={`inline-flex items-center gap-2 ${
-                          selectedCategories.accesorios ? "font-bold" : ""
-                        }`}
+                        className="inline-flex items-center gap-2"
                       >
                         <input
                           type="checkbox"
                           id="FilterOutOfStock"
                           className="h-5 w-5 rounded border-gray-300"
-                          checked={selectedCategories.accesorios}
-                          onChange={() => handleCategoryChange("accesorios")}
                         />
 
                         <span className="text-sm font-medium text-gray-700">
@@ -184,10 +148,104 @@ const index = () => {
               </div>
             </details>
           </div>
+          {/* ordenamientos */}
+          <div className="relative">
+            <details
+              open={open.order}
+              className="group [&_summary::-webkit-details-marker]:hidden"
+            >
+              <summary
+                onClick={() => setopen({ category: false, price: false , order:true})}
+                className="flex cursor-pointer items-center gap-2 border-b border-gray-400 pb-1 text-gray-900 transition hover:border-gray-600"
+              >
+                <span className="text-sm font-medium">Ordenar por:</span>
 
-          <div className="relative mt-4 md:mt-0">
-            <details className="group [&_summary::-webkit-details-marker]:hidden">
-              <summary className="flex cursor-pointer items-center gap-2  border-gray-400 pb-1 text-gray-900 transition hover:border-gray-600">
+                <span className="transition group-open:-rotate-180">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth="1.5"
+                    stroke="currentColor"
+                    className="h-4 w-4"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+                    />
+                  </svg>
+                </span>
+              </summary>
+
+              <div className="z-50 group-open:absolute group-open:start-0 group-open:top-auto group-open:mt-2">
+                <div className="w-64 rounded border border-gray-200 bg-white">
+                  <ul className="space-y-1 border-t border-gray-200 p-4">
+                    <li>
+                      <label
+                        htmlFor="FilterInStock"
+                        className="inline-flex items-center gap-2"
+                      >
+                        <input
+                          type="checkbox"
+                          id="FilterInStock"
+                          className="h-5 w-5 rounded border-gray-300"
+                        />
+
+                        <span className="text-sm font-medium text-gray-700">
+                          Max Precio
+                        </span>
+                      </label>
+                    </li>
+
+                    <li>
+                      <label
+                        htmlFor="FilterPreOrder"
+                        className="inline-flex items-center gap-2"
+                      >
+                        <input
+                          type="checkbox"
+                          id="FilterPreOrder"
+                          className="h-5 w-5 rounded border-gray-300"
+                        />
+
+                        <span className="text-sm font-medium text-gray-700">
+                          Min Precio
+                        </span>
+                      </label>
+                    </li>
+
+                    <li>
+                      <label
+                        htmlFor="FilterOutOfStock"
+                        className="inline-flex items-center gap-2"
+                      >
+                        <input
+                          type="checkbox"
+                          id="FilterOutOfStock"
+                          className="h-5 w-5 rounded border-gray-300"
+                        />
+
+                        <span className="text-sm font-medium text-gray-700">
+                          Rating
+                        </span>
+                      </label>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </details>
+          </div>
+
+          <div className="relative">
+            <details
+              open={open.price}
+              className="group [&_summary::-webkit-details-marker]:hidden"
+            >
+              <summary
+                onClick={() => setopen({ category: false, price: true })}
+                className="flex cursor-pointer items-center gap-2 border-b border-gray-400 pb-1 text-gray-900 transition hover:border-gray-600"
+              >
                 <span className="text-sm font-medium">Price</span>
 
                 <span className="transition group-open:-rotate-180">
@@ -209,7 +267,7 @@ const index = () => {
               </summary>
 
               <div className="z-50 group-open:absolute group-open:start-0 group-open:top-auto group-open:mt-2">
-                <div className="w-80 sm:w-80 rounded border border-gray-200 bg-white">
+                <div className="w-64 rounded border border-gray-200 bg-white">
                   <header className="flex items-center justify-between p-4">
                     <span className="text-sm text-gray-700">
                       The highest price is $600
@@ -260,7 +318,7 @@ const index = () => {
           </div>
         </div>
 
-        <section className="bg-gray-100">
+        <section className="bg-gray-600">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {currentProducts.map((product, index) => (
               <div key={index} className="flex flex-col items-center p-2">

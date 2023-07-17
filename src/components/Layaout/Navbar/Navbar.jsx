@@ -20,6 +20,7 @@ const Navbar = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isNavbarMenuOpen, setIsNavbarMenuOpen] = useState(false);
   const [isHoveredProduct, setIsHoveredProduct] = useState(null);
+  const [isSearchActive, setIsSearchActive] = useState(false);
   const dropdownRef = useRef(null);
 
   const handleSearchChange = (event) => {
@@ -62,9 +63,11 @@ const Navbar = () => {
     if (
       dropdownRef.current &&
       !dropdownRef.current.contains(event.target) &&
-      event.target.id !== "search-input"
+      event.target.id !== "search-input" &&
+      event.target.id !== "search-button" // Evitar desactivar al hacer clic en el botón de búsqueda
     ) {
       setIsHoveredProduct(null);
+      setIsSearchActive(false);
     }
   };
 
@@ -75,6 +78,9 @@ const Navbar = () => {
     };
   }, []);
 
+  const handleSearchClick = () => {
+    setIsSearchActive(true);
+  };
   return (
     <nav className="bg-white border-gray-200 dark:bg-gray-900">
       <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
@@ -265,7 +271,9 @@ const Navbar = () => {
           </ul>
           <div className="max-w-screen-xl mx-auto mt-2">
             <div
-              className="border-b-blue-600 ml-8 focus-within:border-none focus-within:ring focus-within:ring-offset-2 my-6 flex h-8 items-center justify-start border-b-2 bg-gray-100 leading-4 ring-blue-600 sm:w-80"
+              className={`border-b-blue-600 ml-8 focus-within:border-none focus-within:ring focus-within:ring-offset-2 my-6 flex h-8 items-center justify-start border-b-2 bg-gray-100 leading-4 ring-blue-600 sm:w-80 ${
+                isSearchActive ? "ring" : ""
+              }`}
               ref={dropdownRef}
             >
               <input
@@ -274,6 +282,7 @@ const Navbar = () => {
                 value={searchTerm}
                 onChange={handleSearchChange}
                 className="peer ml-2 flex-grow bg-transparent text-gray-500 outline-none text-sm"
+                onClick={handleSearchClick}
               />
               <button
                 type="button"
@@ -303,7 +312,7 @@ const Navbar = () => {
               </button>
             </div>
 
-            {searchTerm.length > 0 && (
+            {isSearchActive && searchTerm.length > 0 && (
               <div className="absolute z-10 mt-2 left-1/2 transform -translate-x-1/2">
                 <div className="bg-white border border-gray-300 rounded-lg shadow-md">
                   <div className="p-4 space-y-2 max-h-60 overflow-y-auto">
@@ -313,7 +322,9 @@ const Navbar = () => {
                           <div
                             key={product.id}
                             className={`flex items-center space-x-2 ${
-                              isHoveredProduct === product.id ? "bg-blue-100" : ""
+                              isHoveredProduct === product.id
+                                ? "bg-blue-100"
+                                : ""
                             }`}
                             onMouseEnter={() => handleMouseEnter(product.id)}
                             onMouseLeave={handleMouseLeave}
