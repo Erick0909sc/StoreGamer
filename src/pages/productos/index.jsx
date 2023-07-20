@@ -1,44 +1,141 @@
 import Layaout from "@/components/Layaout/Layaout";
 import { getAllProducts } from "@/redux/products/productsSlice";
+import Link from "next/link";
+import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const index = () => {
   const dispatch = useDispatch();
-  const products = useSelector((state) => state.products.products);
+  const allProducts = useSelector((state) => state.products.products);
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 10;
-  const [open, setopen] = useState({ category: false, price: false, order: false});
+  const [open, setopen] = useState({
+    category: false,
+    price: false,
+    order: false,
+  });
+  const [selectedCategories, setSelectedCategories] = useState({
+    todos: true,
+    videojuegos: false,
+    consolas: false,
+    accesorios: false,
+  });
+  const [alertShown, setAlertShown] = useState(false);
+  const [sortType, setSortType] = useState(""); // "priceAsc", "priceDesc", "ratingDesc"
+  const [sortDirection, setSortDirection] = useState(1); // 1: Ascendente, -1: Descendente
+
+  
+  const handleCategoryChange = (category) => {
+    if (category === "todos") {
+      setSelectedCategories({
+        todos: true,
+        videojuegos: false,
+        consolas: false,
+        accesorios: false,
+      });
+    } else {
+      setSelectedCategories({
+        ...selectedCategories,
+        todos: false,
+        [category]: !selectedCategories[category],
+      });
+    }
+  };
 
   useEffect(() => {
     dispatch(getAllProducts());
   }, [dispatch]);
 
-  // Calcular el índice del último producto en la página actual
+  const filterProductsByCategory = (products) => {
+    const selected = Object.keys(selectedCategories).filter(
+      (category) => selectedCategories[category]
+    );
+
+    if (selected.length === 0 || selected.includes("todos")) {
+      // Si no se seleccionó ninguna categoría o se seleccionó "todos",
+      // aplicamos el ordenamiento directamente a la lista completa de productos.
+      if (sortType === "priceAsc") {
+        return allProducts.slice().sort((a, b) => a.price - b.price);
+      } else if (sortType === "priceDesc") {
+        return allProducts.slice().sort((a, b) => b.price - a.price);
+      } else if (sortType === "ratingDesc") {
+        return allProducts.slice().sort((a, b) => b.rating - a.rating);
+      } else {
+        return allProducts;
+      }
+    } else {
+      // Si se seleccionó alguna categoría específica, filtramos los productos y luego los ordenamos.
+      const filteredProducts = products.filter((product) =>
+        selected.includes(product.category.toLowerCase())
+      );
+
+      if (sortType === "priceAsc") {
+        return filteredProducts.slice().sort((a, b) => a.price - b.price);
+      } else if (sortType === "priceDesc") {
+        return filteredProducts.slice().sort((a, b) => b.price - a.price);
+      } else if (sortType === "ratingDesc") {
+        return filteredProducts.slice().sort((a, b) => b.rating - a.rating);
+      } else {
+        return filteredProducts;
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (alertShown) {
+      toast.error("Debe tener seleccionada al menos una categoría");
+    }
+    setAlertShown(false);
+  }, [alertShown]);
+
+  useEffect(() => {
+    setCurrentPage(1); // Redirige a la primera página al cambiar los productos filtrados
+  }, [selectedCategories]);
+
+  const handlePageChange = (page) => {
+    const totalPages = Math.ceil(currentProducts.length / productsPerPage);
+    const currentPageAdjusted = Math.min(totalPages, Math.max(1, page));
+    setCurrentPage(currentPageAdjusted);
+  };
+
+  const nextPage = () => {
+    const totalPages = Math.ceil(currentProducts.length / productsPerPage);
+    if (currentPage < totalPages) {
+      setCurrentPage((prevPage) => prevPage + 1);
+    }
+  };
+
+  const prevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage((prevPage) => prevPage - 1);
+    }
+  };
+
+  const products = filterProductsByCategory(allProducts);
   const indexOfLastProduct = currentPage * productsPerPage;
-  // Calcular el índice del primer producto en la página actual
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  // Obtener los productos para mostrar en la página actual
   const currentProducts = products.slice(
     indexOfFirstProduct,
     indexOfLastProduct
   );
-
-  // Calcular el total de páginas
   const totalPages = Math.ceil(products.length / productsPerPage);
 
-  // Función para cambiar a la siguiente página
-  const nextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
+  const sortByPriceAsc = () => {
+    setSortType("priceAsc");
+    setSortDirection(1);
   };
 
-  // Función para cambiar a la página anterior
-  const prevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
+  const sortByPriceDesc = () => {
+    setSortType("priceDesc");
+    setSortDirection(-1);
+  };
+
+  const sortByRatingDesc = () => {
+    setSortType("ratingDesc");
+    setSortDirection(-1);
   };
 
   return (
@@ -80,12 +177,16 @@ const index = () => {
                     <li>
                       <label
                         htmlFor="FilterInStock"
-                        className="inline-flex items-center gap-2"
+                        className={`inline-flex items-center gap-2 ${
+                          selectedCategories.todos ? "font-bold" : ""
+                        }`}
                       >
                         <input
                           type="checkbox"
                           id="FilterInStock"
                           className="h-5 w-5 rounded border-gray-300"
+                          checked={selectedCategories.todos}
+                          onChange={() => handleCategoryChange("todos")}
                         />
 
                         <span className="text-sm font-medium text-gray-700">
@@ -97,12 +198,16 @@ const index = () => {
                     <li>
                       <label
                         htmlFor="FilterPreOrder"
-                        className="inline-flex items-center gap-2"
+                        className={`inline-flex items-center gap-2 ${
+                          selectedCategories.videojuegos ? "font-bold" : ""
+                        }`}
                       >
                         <input
                           type="checkbox"
                           id="FilterPreOrder"
                           className="h-5 w-5 rounded border-gray-300"
+                          checked={selectedCategories.videojuegos}
+                          onChange={() => handleCategoryChange("videojuegos")}
                         />
 
                         <span className="text-sm font-medium text-gray-700">
@@ -114,12 +219,16 @@ const index = () => {
                     <li>
                       <label
                         htmlFor="FilterOutOfStock"
-                        className="inline-flex items-center gap-2"
+                        className={`inline-flex items-center gap-2 ${
+                          selectedCategories.consolas ? "font-bold" : ""
+                        }`}
                       >
                         <input
                           type="checkbox"
                           id="FilterOutOfStock"
                           className="h-5 w-5 rounded border-gray-300"
+                          checked={selectedCategories.consolas}
+                          onChange={() => handleCategoryChange("consolas")}
                         />
 
                         <span className="text-sm font-medium text-gray-700">
@@ -130,12 +239,16 @@ const index = () => {
                     <li>
                       <label
                         htmlFor="FilterOutOfStock"
-                        className="inline-flex items-center gap-2"
+                        className={`inline-flex items-center gap-2 ${
+                          selectedCategories.accesorios ? "font-bold" : ""
+                        }`}
                       >
                         <input
                           type="checkbox"
                           id="FilterOutOfStock"
                           className="h-5 w-5 rounded border-gray-300"
+                          checked={selectedCategories.accesorios}
+                          onChange={() => handleCategoryChange("accesorios")}
                         />
 
                         <span className="text-sm font-medium text-gray-700">
@@ -155,7 +268,9 @@ const index = () => {
               className="group [&_summary::-webkit-details-marker]:hidden"
             >
               <summary
-                onClick={() => setopen({ category: false, price: false , order:true})}
+                onClick={() =>
+                  setopen({ category: false, price: false, order: true })
+                }
                 className="flex cursor-pointer items-center gap-2 border-b border-gray-400 pb-1 text-gray-900 transition hover:border-gray-600"
               >
                 <span className="text-sm font-medium">Ordenar por:</span>
@@ -190,14 +305,17 @@ const index = () => {
                           type="checkbox"
                           id="FilterInStock"
                           className="h-5 w-5 rounded border-gray-300"
-                        />
+                          onChange={() => {
+                            // Llama a la función de ordenamiento correspondiente
 
+                            sortByPriceDesc();
+                          }}
+                        />
                         <span className="text-sm font-medium text-gray-700">
                           Max Precio
                         </span>
                       </label>
                     </li>
-
                     <li>
                       <label
                         htmlFor="FilterPreOrder"
@@ -207,14 +325,16 @@ const index = () => {
                           type="checkbox"
                           id="FilterPreOrder"
                           className="h-5 w-5 rounded border-gray-300"
+                          onChange={() => {
+                            // Llama a la función de ordenamiento correspondiente
+                            sortByPriceAsc();
+                          }}
                         />
-
                         <span className="text-sm font-medium text-gray-700">
                           Min Precio
                         </span>
                       </label>
                     </li>
-
                     <li>
                       <label
                         htmlFor="FilterOutOfStock"
@@ -224,8 +344,11 @@ const index = () => {
                           type="checkbox"
                           id="FilterOutOfStock"
                           className="h-5 w-5 rounded border-gray-300"
+                          onChange={() => {
+                            // Llama a la función de ordenamiento correspondiente
+                            sortByRatingDesc();
+                          }}
                         />
-
                         <span className="text-sm font-medium text-gray-700">
                           Rating
                         </span>
@@ -246,7 +369,7 @@ const index = () => {
                 onClick={() => setopen({ category: false, price: true })}
                 className="flex cursor-pointer items-center gap-2 border-b border-gray-400 pb-1 text-gray-900 transition hover:border-gray-600"
               >
-                <span className="text-sm font-medium">Price</span>
+                <span className="text-sm font-medium">Precio</span>
 
                 <span className="transition group-open:-rotate-180">
                   <svg
@@ -270,7 +393,7 @@ const index = () => {
                 <div className="w-64 rounded border border-gray-200 bg-white">
                   <header className="flex items-center justify-between p-4">
                     <span className="text-sm text-gray-700">
-                      The highest price is $600
+                      El precio maximo es $600
                     </span>
 
                     <button
@@ -312,6 +435,14 @@ const index = () => {
                       </label>
                     </div>
                   </div>
+                  <div className="flex justify-center items-center">
+                    <button
+                      type="button"
+                      className="text-sm text-gray-900 underline underline-offset-4"
+                    >
+                      Buscar
+                    </button>
+                  </div>
                 </div>
               </div>
             </details>
@@ -322,8 +453,8 @@ const index = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {currentProducts.map((product, index) => (
               <div key={index} className="flex flex-col items-center p-2">
-                <article className="rounded-xl bg-white p-3 shadow-lg hover:shadow-xl hover:transform hover:scale-105 duration-300">
-                  <a href="#">
+                <Link href={`/detail?id=${product.id}`}>
+                  <article className="rounded-xl bg-white p-3 shadow-lg hover:shadow-xl hover:transform hover:scale-105 duration-300">
                     <div className="relative flex items-end overflow-hidden rounded-xl">
                       <img
                         src={product.image}
@@ -363,14 +494,14 @@ const index = () => {
                         </div>
                       </div>
                     </div>
-                  </a>
-                </article>
+                  </article>
+                </Link>
               </div>
             ))}
           </div>
         </section>
-        <nav className="flex justify-center my-4">
-          <ul className="flex space-x-2">
+        <nav className="flex justify-center my-4 flex justify-evenly w-full bottom-0">
+          <ul className="flex space-x-2 bottom-0">
             <li>
               <button
                 onClick={prevPage}
@@ -418,6 +549,7 @@ const index = () => {
           </ul>
         </nav>
       </Layaout>
+      <ToastContainer />
     </>
   );
 };

@@ -24,13 +24,6 @@ const index = () => {
     <>
       <Layaout>
         <Slider />
-        {statusAllProducts === "pending" ? (
-          <Loader />
-        ) : (
-          <section className="py-10 bg-gray-100">
-            {/* Renderiza tus productos aquí */}
-          </section>
-        )}
       </Layaout>
     </>
   );
